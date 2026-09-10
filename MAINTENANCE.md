@@ -32,18 +32,18 @@ line still need the legacy upgrade transaction fallback.
 
 Reviewed all four open PRs and seven open issues on 2026-09-10.
 
-| Upstream                                                                                                                                     | Disposition                                                                                                                                                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [PR #56](https://github.com/keep-network/hardhat-helpers/pull/56)                                                                            | Applied to the v5 line; deploy-v1 compatibility is also declared on v6.                                                                                                                        |
-| [PR #53](https://github.com/keep-network/hardhat-helpers/pull/53)                                                                            | V6 receipt conversion is carried by the #4315 implementation, preserving the existing serialized artifact format and adding regression coverage.                                               |
-| [Issue #48](https://github.com/keep-network/hardhat-helpers/issues/48)                                                                       | V6 generics accept BaseContract-derived TypeChain interfaces while retaining Contract as the default return type.                                                                              |
-| [Issues #18](https://github.com/keep-network/hardhat-helpers/issues/18) and [#47](https://github.com/keep-network/hardhat-helpers/issues/47) | Consolidated in [fork #4](https://github.com/threshold-network/hardhat-helpers/issues/4). Focused unit tests are included; real-chain integration coverage remains.                            |
-| [Issue #49](https://github.com/keep-network/hardhat-helpers/issues/49)                                                                       | Prefer the v6 transaction API and retain the fallback required by supported older plugins. Track eventual removal in [fork #1](https://github.com/threshold-network/hardhat-helpers/issues/1). |
-| [Issue #39](https://github.com/keep-network/hardhat-helpers/issues/39)                                                                       | [Fork #5](https://github.com/threshold-network/hardhat-helpers/issues/5) revalidates noCompile against both supported verification plugins before changing behavior.                           |
-| [Issue #38](https://github.com/keep-network/hardhat-helpers/issues/38)                                                                       | [Fork #3](https://github.com/threshold-network/hardhat-helpers/issues/3) tracks explicit test redeployment while retaining the production duplicate guard.                                     |
-| [Issue #22](https://github.com/keep-network/hardhat-helpers/issues/22)                                                                       | [Fork #2](https://github.com/threshold-network/hardhat-helpers/issues/2) tracks optional/separate upgrade helpers.                                                                             |
-| [PR #55](https://github.com/keep-network/hardhat-helpers/pull/55)                                                                            | Version-only 0.7.2 release bookkeeping. Its runtime changes are already in main; the fork advances to its own 0.7.3 prerelease.                                                                |
-| [PR #10](https://github.com/keep-network/hardhat-helpers/pull/10)                                                                            | Not carried: obsolete CI authentication experiment that removes build/test steps and pushes test commits.                                                                                      |
+| Upstream                                                                                                                                     | Disposition                                                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [PR #56](https://github.com/keep-network/hardhat-helpers/pull/56)                                                                            | Applied to the v5 line; deploy-v1 compatibility is also declared on v6.                                                                                                                                                                              |
+| [PR #53](https://github.com/keep-network/hardhat-helpers/pull/53)                                                                            | V6 receipt conversion is carried by the #4315 implementation, preserving the existing serialized artifact format and adding regression coverage.                                                                                                     |
+| [Issue #48](https://github.com/keep-network/hardhat-helpers/issues/48)                                                                       | V6 generics accept BaseContract-derived TypeChain interfaces while retaining Contract as the default return type.                                                                                                                                    |
+| [Issues #18](https://github.com/keep-network/hardhat-helpers/issues/18) and [#47](https://github.com/keep-network/hardhat-helpers/issues/47) | Consolidated in [fork #4](https://github.com/threshold-network/hardhat-helpers/issues/4). Real-chain deployment, upgrades, validation, authorization, receipts, and failure coverage now run in both CI stacks.                                      |
+| [Issue #49](https://github.com/keep-network/hardhat-helpers/issues/49)                                                                       | Prefer the v6 transaction API and retain the fallback required by supported older plugins. The removal request in [fork #1](https://github.com/threshold-network/hardhat-helpers/issues/1) is not currently applicable; retain tested compatibility. |
+| [Issue #39](https://github.com/keep-network/hardhat-helpers/issues/39)                                                                       | [Fork #5](https://github.com/threshold-network/hardhat-helpers/issues/5) is addressed with noCompile on legacy etherscan 3.1.8+, existing-artifact verification on v6, and regression tests.                                                         |
+| [Issue #38](https://github.com/keep-network/hardhat-helpers/issues/38)                                                                       | [Fork #3](https://github.com/threshold-network/hardhat-helpers/issues/3) is addressed with explicit redeploy mode, persisted-record coverage, and the default duplicate guard.                                                                       |
+| [Issue #22](https://github.com/keep-network/hardhat-helpers/issues/22)                                                                       | [Fork #2](https://github.com/threshold-network/hardhat-helpers/issues/2) is addressed with base and upgrades entry points, optional peers, and isolated runtime/type checks.                                                                         |
+| [PR #55](https://github.com/keep-network/hardhat-helpers/pull/55)                                                                            | Version-only 0.7.2 release bookkeeping. Its runtime changes are already in main; the fork advances to its own 0.7.3 prerelease.                                                                                                                      |
+| [PR #10](https://github.com/keep-network/hardhat-helpers/pull/10)                                                                            | Not carried: obsolete CI authentication experiment that removes build/test steps and pushes test commits.                                                                                                                                            |
 
 ## Packaging and consumers
 
@@ -69,3 +69,33 @@ A helper release only replaces the helper patch: the migration's patches for
 OpenZeppelin, TypeChain, and Threshold contracts remain separate. Validate
 actual packed producer/consumer deployments before removing downstream
 patches or enabling publication of executable deployment scripts.
+
+## Upgrade transaction compatibility decision
+
+As checked on 2026-09-10, OpenZeppelin
+[PR #874](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/874) remains
+open. Even its published
+[4.1.0 implementation](https://github.com/OpenZeppelin/openzeppelin-upgrades/blob/%40openzeppelin%2Fhardhat-upgrades%404.1.0/packages/plugin-hardhat/src/upgrade-proxy.ts)
+assigns the upgrade transaction to `deployTransaction`. There is no verified
+release boundary at which this compatibility path can be removed.
+
+The ethers v6 helper therefore prefers `deploymentTransaction()` when present
+and falls back to `deployTransaction`. Unit tests cover both shapes, and real
+upgrades exercise the fallback with supported 2.5.1 and 3.0.2 plugins. Raising the
+minimum to 3.x would also change new transparent-proxy admin behavior and would
+not remove the need for this adapter. Revisit only after an upstream release
+changes the return contract and all supported consumers have migrated.
+
+## Regression coverage
+
+The pinned solc-js 0.8.17 compiler runs locally without compiler downloads.
+On-chain fixtures cover initialization, state preservation, admin ownership,
+unauthorized upgrades, incompatible storage, reverted upgrade calls, persisted
+receipts, and explicit fresh proxy deployment. The v6 matrix executes prepared
+transactions against both shared v4 and per-proxy v5 admins. Preparation never
+updates the canonical record ahead of execution.
+
+The base-only consumer test blocks loading the optional Upgrades plugin and
+checks its absence from the TypeScript declaration graph. A second consumer
+combines root/base/upgrades imports and exercises the resulting environment.
+Runtime dependencies used by base helpers are declared explicitly.

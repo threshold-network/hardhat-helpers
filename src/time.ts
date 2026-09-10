@@ -77,6 +77,12 @@ export async function mineBlocks(blocks: number): Promise<number> {
 export async function mineBlocksTo(targetBlock: number): Promise<number> {
   const latest = await timeHelpers.latestBlock()
 
+  if (targetBlock < latest) {
+    throw new Error(
+      `target block number [${targetBlock}] already passed; latest block number is [${latest}]`
+    )
+  }
+
   if (targetBlock === latest) {
     return latest
   }

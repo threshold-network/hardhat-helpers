@@ -264,7 +264,7 @@ describe("Upgrade helpers", function () {
       if (method === "upgradeAndCall") {
         expect(decoded?.args[2]).to.equal(callData ?? "0x")
       }
-      expect(saved[0].deployment.implementation).to.equal(implementation)
+      expect(saved).to.have.length(0)
     })
   }
 })

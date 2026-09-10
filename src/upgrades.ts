@@ -82,6 +82,8 @@ type CustomFactoryOptions = FactoryOptions & {
 }
 
 export interface UpgradesDeployOptions {
+  /** Deploy a fresh proxy and replace this name only after success. */
+  redeploy?: boolean
   contractName?: string
   initializerArgs?: unknown[]
   factoryOpts?: CustomFactoryOptions
@@ -117,7 +119,7 @@ export async function deployProxy<T extends BaseContract = Contract>(
   const { log } = deployments
 
   const existingDeployment = await deployments.getOrNull(name)
-  if (existingDeployment) {
+  if (existingDeployment && !opts?.redeploy) {
     throw new Error(
       `${name} was already deployed at ${existingDeployment.address}`
     )
@@ -208,8 +210,9 @@ async function upgradeProxy<T extends BaseContract = Contract>(
     opts?.proxyOpts
   )) as unknown as T
 
-  // OpenZeppelin 2.5 and early 3.x attach the upgrade transaction to the v5
-  // field. Prefer the ethers v6 API when available, retaining those consumers.
+  // Supported OpenZeppelin 2.x/3.x plugins attach the upgrade transaction to
+  // deployTransaction, including current upstream releases. Keep this adapter
+  // until every supported version returns it through the ethers v6 API.
   const deploymentTransaction =
     newContractInstance.deploymentTransaction() ??
     (
@@ -285,7 +288,7 @@ async function prepareProxyUpgrade(
   newImplementationAddress: string
   preparedTransaction: ContractTransaction
 }> {
-  const { ethers, upgrades, deployments, artifacts } = hre
+  const { ethers, upgrades, deployments } = hre
   const signer = await ethers.provider.getSigner()
   const { log } = deployments
 
@@ -370,16 +373,8 @@ async function prepareProxyUpgrade(
       `transaction:\n${JSON.stringify(preparedTransaction, null, 2)}`
   )
 
-  // Update Deployment Artifact
-  const artifact: Artifact = artifacts.readArtifactSync(
-    opts?.contractName || newContractName
-  )
-
-  await deployments.save(proxyDeploymentName, {
-    ...proxyDeployment,
-    abi: artifact.abi,
-    implementation: newImplementationAddress,
-  })
+  // Preparation is not execution. Keep the canonical deployment unchanged
+  // until the admin transaction has been mined and independently confirmed.
 
   return { newImplementationAddress, preparedTransaction }
 }

@@ -34,6 +34,7 @@ jobs:
         if: matrix.stack == 'deploy-v1'
         run: yarn add --dev --exact --ignore-engines hardhat@2.29.0 ethers@6.17.0 hardhat-deploy@1.0.4 @nomicfoundation/hardhat-ethers@3.1.3 @openzeppelin/hardhat-upgrades@2.5.1 typescript@5.9.3 @types/node@24.0.0
       - run: yarn build
+      - run: yarn tsc --noEmit
       - run: yarn test
       - name: Check formatting
         if: matrix.stack == 'locked'

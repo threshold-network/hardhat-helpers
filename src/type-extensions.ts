@@ -11,7 +11,6 @@ import type { HardhatForkingHelpers } from "./forking"
 import type { HardhatNumberHelpers } from "./number"
 import type { HardhatSignersHelpers } from "./signers"
 import type { HardhatSnapshotHelpers } from "./snapshot"
-import type { HardhatUpgradesHelpers } from "./upgrades"
 import {
   DeploymentArtifactsExportConfig,
   DeploymentArtifactsExportUserConfig,
@@ -33,7 +32,9 @@ declare module "hardhat/types/runtime" {
   }
 }
 
-export interface HardhatHelpers {
+export interface HardhatHelpers extends HardhatBaseHelpers {}
+
+export interface HardhatBaseHelpers {
   account: HardhatAccountHelpers
   address: HardhatAddressHelpers
   contracts: HardhatContractsHelpers
@@ -44,5 +45,4 @@ export interface HardhatHelpers {
   time: HardhatTimeHelpers
   signers: HardhatSignersHelpers
   snapshot: HardhatSnapshotHelpers
-  upgrades: HardhatUpgradesHelpers
 }

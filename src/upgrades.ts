@@ -1,35 +1,68 @@
 import "@openzeppelin/hardhat-upgrades"
 
 import type {
+  BaseContract,
   Contract,
   ContractFactory,
   ContractTransaction,
   ContractTransactionResponse,
+  TransactionReceipt,
 } from "ethers"
 import type {
   Artifact,
   FactoryOptions,
   HardhatRuntimeEnvironment,
 } from "hardhat/types"
-import type { Deployment } from "hardhat-deploy/dist/types"
+import type { Deployment, Receipt } from "hardhat-deploy/dist/types"
 import type {
   DeployProxyOptions,
   UpgradeProxyOptions,
 } from "@openzeppelin/hardhat-upgrades/src/utils/options"
 import { Libraries } from "hardhat-deploy/types"
-import {
-  attachProxyAdminV4,
-  attachProxyAdminV5,
-} from "@openzeppelin/hardhat-upgrades/dist/utils"
+import ProxyAdminV4 from "@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol/ProxyAdmin.json"
+import ProxyAdminV5 from "@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/transparent/ProxyAdmin.sol/ProxyAdmin.json"
 
 import { getUpgradeInterfaceVersion } from "@openzeppelin/upgrades-core"
 
+// Preserve the receipt metadata published by hardhat-helpers 0.6.
+function toDeploymentReceipt(receipt: TransactionReceipt): Receipt {
+  const deploymentReceipt = {
+    to: receipt.to,
+    from: receipt.from,
+    contractAddress: receipt.contractAddress,
+    transactionIndex: receipt.index,
+    gasUsed: receipt.gasUsed.toString(),
+    logsBloom: receipt.logsBloom,
+    blockHash: receipt.blockHash,
+    transactionHash: receipt.hash,
+    logs: receipt.logs.map((log) => ({
+      transactionIndex: log.transactionIndex,
+      blockNumber: log.blockNumber,
+      transactionHash: log.transactionHash,
+      address: log.address,
+      topics: [...log.topics],
+      data: log.data,
+      logIndex: log.index,
+      blockHash: log.blockHash,
+      // Mined receipt logs omit the removed field in the existing export format.
+      removed: undefined,
+    })),
+    blockNumber: receipt.blockNumber,
+    cumulativeGasUsed: receipt.cumulativeGasUsed.toString(),
+    status: receipt.status,
+    byzantium: receipt.status !== null,
+  }
+  // hardhat-deploy's types exclude the null addresses and absent `removed`
+  // field emitted by ethers v5. Preserve the existing JSON contract here.
+  return deploymentReceipt as unknown as Receipt
+}
+
 export interface HardhatUpgradesHelpers {
-  deployProxy<T extends Contract>(
+  deployProxy<T extends BaseContract = Contract>(
     name: string,
     opts?: UpgradesDeployOptions
   ): Promise<[T, Deployment]>
-  upgradeProxy<T extends Contract>(
+  upgradeProxy<T extends BaseContract = Contract>(
     currentContractName: string,
     newContractName: string,
     opts?: UpgradesUpgradeOptions
@@ -49,6 +82,8 @@ type CustomFactoryOptions = FactoryOptions & {
 }
 
 export interface UpgradesDeployOptions {
+  /** Deploy a fresh proxy and replace this name only after success. */
+  redeploy?: boolean
   contractName?: string
   initializerArgs?: unknown[]
   factoryOpts?: CustomFactoryOptions
@@ -75,7 +110,7 @@ export interface UpgradesPrepareProxyUpgradeOptions {
  * @param {string} name Contract Name
  * @param {UpgradesDeployOptions} opts
  */
-export async function deployProxy<T extends Contract>(
+export async function deployProxy<T extends BaseContract = Contract>(
   hre: HardhatRuntimeEnvironment,
   name: string,
   opts?: UpgradesDeployOptions
@@ -84,7 +119,7 @@ export async function deployProxy<T extends Contract>(
   const { log } = deployments
 
   const existingDeployment = await deployments.getOrNull(name)
-  if (existingDeployment) {
+  if (existingDeployment && !opts?.redeploy) {
     throw new Error(
       `${name} was already deployed at ${existingDeployment.address}`
     )
@@ -99,7 +134,7 @@ export async function deployProxy<T extends Contract>(
     contractFactory,
     opts?.initializerArgs,
     opts?.proxyOpts
-  )) as T
+  )) as unknown as T
 
   const deploymentTransaction = contractInstance.deploymentTransaction()
 
@@ -133,6 +168,7 @@ export async function deployProxy<T extends Contract>(
     abi: artifact.abi,
     transactionHash: transactionHash,
     implementation: implementation,
+    receipt: toDeploymentReceipt(transactionReceipt),
     libraries: opts?.factoryOpts?.libraries,
     devdoc: "Contract deployed as upgradable proxy",
     args: opts?.proxyOpts?.constructorArgs,
@@ -152,7 +188,7 @@ export async function deployProxy<T extends Contract>(
  * @param {string} newContractName Name of the new implementation contract.
  * @param {UpgradesDeployOptions} opts
  */
-async function upgradeProxy<T extends Contract>(
+async function upgradeProxy<T extends BaseContract = Contract>(
   hre: HardhatRuntimeEnvironment,
   proxyDeploymentName: string,
   newContractName: string,
@@ -172,15 +208,18 @@ async function upgradeProxy<T extends Contract>(
     proxyDeployment.address,
     newContract,
     opts?.proxyOpts
-  )) as T
+  )) as unknown as T
 
-  // This is a workaround to get the deployment transaction. The upgradeProxy attaches
-  // the deployment transaction to the field under a different name than ethers
-  // contract.deploymentTransaction() function expects.
-  // TODO: Remove this workaround once the issue is fixed on the OpenZeppelin side.
-  // Tracked in: https://github.com/keep-network/hardhat-helpers/issues/49
+  // Supported OpenZeppelin 2.x/3.x plugins attach the upgrade transaction to
+  // deployTransaction, including current upstream releases. Keep this adapter
+  // until every supported version returns it through the ethers v6 API.
   const deploymentTransaction =
-    newContractInstance.deployTransaction as unknown as ContractTransactionResponse
+    newContractInstance.deploymentTransaction() ??
+    (
+      newContractInstance as BaseContract & {
+        deployTransaction?: ContractTransactionResponse
+      }
+    ).deployTransaction
 
   // Let the transaction propagate across the ethereum nodes. This is mostly to
   // wait for all Alchemy nodes to catch up their state.
@@ -217,6 +256,7 @@ async function upgradeProxy<T extends Contract>(
     abi: artifact.abi,
     transactionHash: transactionHash,
     implementation: implementation,
+    receipt: toDeploymentReceipt(transactionReceipt),
     libraries: opts?.factoryOpts?.libraries,
     devdoc: "Contract deployed as upgradable proxy",
     args: opts?.proxyOpts?.constructorArgs,
@@ -248,7 +288,7 @@ async function prepareProxyUpgrade(
   newImplementationAddress: string
   preparedTransaction: ContractTransaction
 }> {
-  const { ethers, upgrades, deployments, artifacts } = hre
+  const { ethers, upgrades, deployments } = hre
   const signer = await ethers.provider.getSigner()
   const { log } = deployments
 
@@ -285,7 +325,11 @@ async function prepareProxyUpgrade(
 
   switch (proxyInterfaceVersion) {
     case "5.0.0": {
-      proxyAdmin = await attachProxyAdminV5(hre, proxyAdminAddress, signer)
+      proxyAdmin = await hre.ethers.getContractAt(
+        ProxyAdminV5.abi,
+        proxyAdminAddress,
+        signer
+      )
 
       upgradeTxData = proxyAdmin.interface.encodeFunctionData(
         "upgradeAndCall",
@@ -298,7 +342,11 @@ async function prepareProxyUpgrade(
       break
     }
     default: {
-      proxyAdmin = await attachProxyAdminV4(hre, proxyAdminAddress, signer)
+      proxyAdmin = await hre.ethers.getContractAt(
+        ProxyAdminV4.abi,
+        proxyAdminAddress,
+        signer
+      )
 
       if (opts?.callData) {
         upgradeTxData = proxyAdmin.interface.encodeFunctionData(
@@ -325,16 +373,8 @@ async function prepareProxyUpgrade(
       `transaction:\n${JSON.stringify(preparedTransaction, null, 2)}`
   )
 
-  // Update Deployment Artifact
-  const artifact: Artifact = artifacts.readArtifactSync(
-    opts?.contractName || newContractName
-  )
-
-  await deployments.save(proxyDeploymentName, {
-    ...proxyDeployment,
-    abi: artifact.abi,
-    implementation: newImplementationAddress,
-  })
+  // Preparation is not execution. Keep the canonical deployment unchanged
+  // until the admin transaction has been mined and independently confirmed.
 
   return { newImplementationAddress, preparedTransaction }
 }

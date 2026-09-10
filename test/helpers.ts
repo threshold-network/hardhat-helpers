@@ -2,6 +2,8 @@ import { resetHardhatContext } from "hardhat/plugins-testing"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
 
+export const projectRoot = path.resolve(__dirname, "..")
+
 declare module "mocha" {
   export interface Context {
     hre: HardhatRuntimeEnvironment

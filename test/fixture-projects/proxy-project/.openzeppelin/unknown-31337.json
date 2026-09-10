@@ -1,0 +1,99 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "txHash": "0x320adb7fcdba828d6b961f164c405bcb8ef40c6c8fc2f94e181ace8b607ffd76"
+  },
+  "proxies": [
+    {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "txHash": "0xa659a3fc83285e501e08a9982d0e93db542e287f3cb3bd4089a23547268f4ac3",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "txHash": "0xe94a2b9e5d3884904940a99b03411b1ade10a191e5f1fa7403a7e40c6a9fe924",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "2f030cf34d5bfa53eaac99e35eb79927ce01c875b2e271b91e85486d16d46333": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0x650e3684a88e112a00bfc8169c8e651e5aea8f98292ef86d1421084da7acc794",
+      "layout": {
+        "solcVersion": "0.8.17",
+        "storage": [
+          {
+            "label": "value",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "Counter",
+            "src": "contracts/Counter.sol:6"
+          },
+          {
+            "label": "initialized",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_bool",
+            "contract": "Counter",
+            "src": "contracts/Counter.sol:7"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
+      }
+    },
+    "30d0ba4ec07cce69603624d5f2455f802dea3ee359753c6b69c9f8e722a1109c": {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "txHash": "0xc88edf1cc2b8a116b8ce54ad8c25bce2cc7ee501191df65c13329a75995bbd31",
+      "layout": {
+        "solcVersion": "0.8.17",
+        "storage": [
+          {
+            "label": "value",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "Counter",
+            "src": "contracts/Counter.sol:6"
+          },
+          {
+            "label": "initialized",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_bool",
+            "contract": "Counter",
+            "src": "contracts/Counter.sol:7"
+          },
+          {
+            "label": "extra",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "CounterV2",
+            "src": "contracts/Counter.sol:18"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
+      }
+    }
+  }
+}

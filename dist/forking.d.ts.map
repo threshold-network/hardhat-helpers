@@ -1,0 +1,1 @@
+{"version":3,"file":"forking.d.ts","sourceRoot":"","sources":["../src/forking.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAEV,yBAAyB,EAC1B,MAAM,eAAe,CAAA;AACtB,MAAM,WAAW,qBAAqB;IACpC,SAAS,CAAC,WAAW,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CAAA;CAC9C;AA8BD,MAAM,CAAC,OAAO,WACZ,GAAG,EAAE,yBAAyB,GAC7B,qBAAqB,CAIvB"}

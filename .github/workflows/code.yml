@@ -2,40 +2,48 @@ name: Code
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, releases/v0.6.0]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - stack: locked
+            node: "16"
+          - stack: deploy-v1
+            node: "24"
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "14.x"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install
-
-      - name: Run tests
-        run: yarn test
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "14.x"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install
-
-      - name: Format
+          node-version: ${{ matrix.node }}
+          cache: yarn
+      - run: npm install --global yarn@1.22.22
+      - name: Install locked stack
+        if: matrix.stack == 'locked'
+        run: yarn install --frozen-lockfile
+      - name: Install deploy-v1 consumer stack
+        if: matrix.stack == 'deploy-v1'
+        run: yarn add --dev --exact --ignore-engines hardhat@2.29.0 ethers@5.8.0 hardhat-deploy@1.0.4 @nomiclabs/hardhat-ethers@2.2.3 @openzeppelin/hardhat-upgrades@1.28.0 typescript@5.9.3 @types/node@24.0.0
+      - run: yarn build
+      - run: yarn tsc --noEmit
+      - run: yarn test
+      - name: Check formatting
+        if: matrix.stack == 'locked'
         run: yarn format
+      - name: Pack compiled distribution
+        run: |
+          mkdir -p "$RUNNER_TEMP/helpers-pack"
+          npm pack --pack-destination "$RUNNER_TEMP/helpers-pack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helpers-${{ matrix.stack }}
+          path: ${{ runner.temp }}/helpers-pack/*.tgz

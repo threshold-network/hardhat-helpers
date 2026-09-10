@@ -11,7 +11,6 @@ import type {
   DeployProxyOptions,
   UpgradeProxyOptions,
 } from "@openzeppelin/hardhat-upgrades/src/utils/options"
-import type { TransactionReceipt } from "@ethersproject/abstract-provider"
 
 export interface HardhatUpgradesHelpers {
   deployProxy<T extends Contract>(
@@ -26,6 +25,8 @@ export interface HardhatUpgradesHelpers {
 }
 
 export interface UpgradesDeployOptions {
+  /** Deploy a fresh proxy and replace this name only after success. */
+  redeploy?: boolean
   contractName?: string
   initializerArgs?: unknown[]
   factoryOpts?: FactoryOptions
@@ -55,7 +56,7 @@ export async function deployProxy<T extends Contract>(
   const { log } = deployments
 
   const existingDeployment = await deployments.getOrNull(name)
-  if (existingDeployment) {
+  if (existingDeployment && !opts?.redeploy) {
     throw new Error(
       `${name} was already deployed at ${existingDeployment.address}`
     )
@@ -74,7 +75,7 @@ export async function deployProxy<T extends Contract>(
 
   // Let the transaction propagate across the ethereum nodes. This is mostly to
   // wait for all Alchemy nodes to catch up their state.
-  await contractInstance.deployTransaction.wait(1)
+  const transactionReceipt = await contractInstance.deployTransaction.wait(1)
 
   log(
     `Deployed ${name} as ${opts?.proxyOpts?.kind || "transparent"} proxy at ${
@@ -84,13 +85,8 @@ export async function deployProxy<T extends Contract>(
 
   const artifact = artifacts.readArtifactSync(opts?.contractName || name)
 
-  const adminInstance = await upgrades.admin.getInstance()
-  const implementation = await adminInstance.getProxyImplementation(
+  const implementation = await upgrades.erc1967.getImplementationAddress(
     contractInstance.address
-  )
-
-  const transactionReceipt = await ethers.provider.getTransactionReceipt(
-    contractInstance.deployTransaction.hash
   )
 
   const deployment: Deployment = {
@@ -142,7 +138,7 @@ async function upgradeProxy<T extends Contract>(
 
   // Let the transaction propagate across the ethereum nodes. This is mostly to
   // wait for all Alchemy nodes to catch up their state.
-  await newContractInstance.deployTransaction.wait(1)
+  const transactionReceipt = await newContractInstance.deployTransaction.wait(1)
 
   log(
     `Upgraded ${proxyDeploymentName} proxy contract (address: ${proxyDeployment.address}) ` +
@@ -153,19 +149,13 @@ async function upgradeProxy<T extends Contract>(
     opts?.contractName || newContractName
   )
 
-  const adminInstance: Contract = await upgrades.admin.getInstance()
-  const implementation: string = await adminInstance.getProxyImplementation(
+  const implementation = await upgrades.erc1967.getImplementationAddress(
     newContractInstance.address
   )
 
   log(
     `New ${proxyDeploymentName} proxy contract implementation address is: ${implementation}`
   )
-
-  const transactionReceipt: TransactionReceipt =
-    await ethers.provider.getTransactionReceipt(
-      newContractInstance.deployTransaction.hash
-    )
 
   const deployment: Deployment = {
     address: newContractInstance.address,

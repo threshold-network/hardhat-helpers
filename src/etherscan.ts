@@ -20,6 +20,7 @@ async function verify(
   try {
     console.log(`Verifying contract ${deployment.address} on Etherscan...`)
     await hre.run("verify:verify", {
+      noCompile: true,
       address: deployment.address,
       constructorArguments: deployment.args,
       libraries: deployment.libraries,

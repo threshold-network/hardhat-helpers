@@ -114,7 +114,7 @@ describe("time helpers", function () {
       it("should fail if target block number already passed", async function () {
         const targetBlock = currentBlockNumber - 1
 
-        expect(timeHelpers.mineBlocksTo(targetBlock)).to.be.rejectedWith(
+        await expect(timeHelpers.mineBlocksTo(targetBlock)).to.be.rejectedWith(
           `target block number [${targetBlock}] already passed; latest block number is [${currentBlockNumber}]`
         )
       })

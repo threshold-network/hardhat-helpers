@@ -102,7 +102,7 @@ export async function mineBlocksTo(
 
   if (targetBlock < lastBlockNumber)
     throw new Error(
-      `target block number already passed; latest block number is [${lastBlockNumber}]`
+      `target block number [${targetBlock}] already passed; latest block number is [${lastBlockNumber}]`
     )
 
   const blocksToMine = targetBlock - lastBlockNumber

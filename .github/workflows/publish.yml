@@ -1,79 +1,26 @@
-name: NPM Package Publish
+name: Package artifact
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
   workflow_dispatch:
-  release:
-    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
-  build-test-publish:
-    name: Build, test and publish
+  pack:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          token: ${{ secrets.CI_GITHUB_TOKEN }}
-
-      - uses: actions/setup-node@v3
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: npm install --global yarn@1.22.22
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: yarn test
+      - run: npm pack --pack-destination "$RUNNER_TEMP"
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: "16"
-          cache: "yarn"
-          registry-url: "https://registry.npmjs.org"
-          scope: "@keep-network"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build
-        run: yarn build
-
-      - name: Test
-        run: yarn test
-
-      - name: Setup git credentials
-        if: github.event_name != 'pull_request'
-        run: |
-          git config user.name Valkyrie
-          git config user.email 8324465+thesis-valkyrie@noreply.github.com
-
-      # On `main` merge or manual workflow dispatch on `main` publish a
-      # pre-release package. Automatically bump version based on the current
-      # version stored in package.json.
-      - name: Publish pre-release package
-        if: |
-          github.event_name == 'push'
-            || (github.event_name == 'workflow_dispatch'
-            && github.ref == 'main')
-        run: yarn publish --non-interactive --prerelease --preid pre --message "Pre-release v%s [skip ci]" --tag "pre"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # On manual workflow dispatch on branch different than `main` publish a
-      # pre-release package without a tag. Automatically bump version based on
-      # the current version stored in package.json.
-      - name: Publish feature package
-        if: |
-          github.event_name == 'workflow_dispatch'
-            && github.ref != 'main'
-        run: yarn publish --non-interactive --prerelease --preid feature --no-git-tag-version
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # On release creation publish a release package with the same version as
-      # the one stored in package.json.
-      - name: Publish release package
-        if: github.event_name == 'release'
-        run: yarn publish --non-interactive --message "Release v%s [skip ci]" --tag "latest" --no-git-tag-version
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Push git commit
-        if: |
-          github.event_name == 'push' 
-            || (github.event_name == 'workflow_dispatch'
-            && github.ref == 'main')
-        run: git push
+          name: hardhat-helpers-package
+          path: ${{ runner.temp }}/*.tgz

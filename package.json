@@ -12,7 +12,8 @@
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "test": "mocha --exit --recursive 'test/**/*.test.ts'",
     "build": "tsc --project tsconfig.export.json",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "prepare": "npm run build"
   },
   "files": [
     "dist/",

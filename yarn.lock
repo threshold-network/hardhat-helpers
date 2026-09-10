@@ -1029,7 +1029,7 @@
     proper-lockfile "^4.1.1"
     undici "^5.28.2"
 
-"@openzeppelin/upgrades-core@^1.32.0":
+"@openzeppelin/upgrades-core@^1.32.0", "@openzeppelin/upgrades-core@^1.32.2":
   version "1.32.2"
   resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.32.2.tgz#4313bd0a547090a350817cf798af60e0eb0728e8"
   integrity sha512-EkXriOHZfn6u00Tbq0zUuhHDeTQB9WyAZKZo3UeYdqULb7E3vqxZgxgXmWJwEzAb6E77DvprzQ4gwCAjMV/S4Q==

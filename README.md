@@ -1,4 +1,4 @@
-# hardhat-plugin
+# hardhat-helpers
 
 [Hardhat](https://hardhat.org) plugin from Keep Network.
 
@@ -9,19 +9,19 @@ This plugin contains helpers for Hardhat.
 ## Installation
 
 ```bash
-yarn add --dev @keep-network/hardhat-helpers ethers@^5.0.32 hardhat-deploy@^0.8.11
+yarn add --dev @threshold-network/hardhat-helpers ethers@^6.10.0 hardhat-deploy@^1.0.4
 ```
 
 Import the plugin in your `hardhat.config.js`:
 
 ```js
-require("@keep-network/hardhat-helpers")
+require("@threshold-network/hardhat-helpers")
 ```
 
 Or if you are using TypeScript, in your `hardhat.config.ts`:
 
 ```ts
-import "@keep-network/hardhat-helpers"
+import "@threshold-network/hardhat-helpers"
 ```
 
 ## Environment extensions
@@ -41,3 +41,9 @@ Example:
 ```js
 hre.helpers.address.isValid(KeepToken.address)
 ```
+
+## Maintenance and release lines
+
+See [MAINTENANCE.md](MAINTENANCE.md) for supported runtimes, upstream carryovers,
+and the release process. The Threshold-scoped versions are release candidates;
+publishing is a separate step after validation and npm scope access are ready.

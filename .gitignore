@@ -4,3 +4,4 @@ yarn-error.log
 test/fixture-projects/proxy-project/artifacts/
 test/fixture-projects/proxy-project/cache/
 test/fixture-projects/proxy-project/deployments/
+test/fixture-projects/proxy-project/.openzeppelin/

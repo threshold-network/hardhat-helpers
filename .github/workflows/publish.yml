@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.CI_GITHUB_TOKEN }}
+          token: ${{ github.event_name == 'pull_request' && github.token || secrets.CI_GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
